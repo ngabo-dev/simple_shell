@@ -1,37 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
+#define MAX_COMMAND_LENGTH 100
 /**
- * main - Simple Shell
- *
- * Return: Always 0
+ * main - main function
+ * Return: 0
  */
 int main(void)
 {
-    char *buffer = NULL;
-    size_t bufsize = 0;
-    ssize_t characters;
+    char command[MAX_COMMAND_LENGTH];
 
     while (1)
     {
-        printf("$ ");  /* Display shell prompt */
+        printf("Shell> ");
+        fgets(command, MAX_COMMAND_LENGTH, stdin);
 
-        /* Read input from the user */
-        characters = getline(&buffer, &bufsize, stdin);
+        // Remove trailing newline character
+        command[strcspn(command, "\n")] = '\0';
 
-        /* Check for end of file or error */
-        if (characters == -1)
+        // Exit the shell if the user enters "exit"
+        if (strcmp(command, "exit") == 0)
         {
-            perror("getline");
             break;
         }
 
-        /* Print the entered command */
-        printf("You entered: %s", buffer);
+        // Fork a child process to execute the command
+        pid_t pid = fork();
+
+        if (pid < 0)
+        {
+            fprintf(stderr, "Fork failed\n");
+            exit(1);
+        }
+        else if (pid == 0)
+        {
+            // Child process
+            execlp(command, command, NULL);
+            fprintf(stderr, "Command not found: %s\n", command);
+            exit(1);
+        }
+        else
+        {
+            // Parent process
+            wait(NULL);
+        }
     }
 
-    /* Free the allocated memory */
-    free(buffer);
-
-    return 0;
+    return (0);
 }
